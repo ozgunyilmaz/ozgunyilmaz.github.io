@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <title>Directions Service</title>
+  <style>
+      /* Always set the map height explicitly to define the size of the div
+      * element that contains the map. */
+      #map {
+        height: 100%;
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+
+      .info-panel {
+        position:absolute;
+        bottom:20px;
+        right:70px;
+        width:200px;
+        background-color: white;
+        padding:5px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        border: 1px solid #CCCCCC;
+        border-radius: 8px;
+      }
+
+      .renk{
+        width:10px;
+      }
+
+      div.info-panel p{
+        font-family: Arial,Helvetica Neue,Helvetica,sans-serif; 
+        color: #666666;
+        margin:3px;
+
+      }
+
+      #red{
+        background-color: red;
+      }
+
+      #orange{
+        background-color: orange;
+      }
+
+      #yellow{
+        background-color: yellow;
+      }
+
+      #green{
+        background-color: green;
+      }
+
+      .speed{
+        margin-left: 10px;
+      }
+      
+    </style>
+  </head>
+  <body>
+
+    <div id="map"></div>
+    <!-- <div class="info-panel">
+      <p style="text-align: center; font-weight:bold">Legend</p>
+      <p><span class="renk" id="green">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="speed">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; speed &gt; 70 km/h </span></p>
+      <p><span class="renk" id="yellow">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="speed"> 50 &lt; speed &le; 70 km/h </span></p>
+      <p><span class="renk" id="orange">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="speed"> 40 &lt; speed &le; 70 km/h</span></p>
+      <p><span class="renk" id="red">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="speed">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; speed &le; 40 km/h </span></p>
+
+    </div> -->
+    <script>var locations;
+    function initMap() {
+
+      // locations = [
+      // {stroke:5, lat1: 38.470975, lng1: 27.085328, lat2: 38.480695, lng2: 27.160460, sub:[{renk: 'red', no:50}, {renk: 'green', no:100 }, {renk: 'blue', no:-1}]},
+      // {stroke:15, lat1: 38.480695, lng1: 27.160460, lat2: 38.458821, lng2: 27.227570, sub:[{renk: 'yellow', no:30}, {renk: 'blue', no:100}, {renk: 'black', no:-1}]},
+      // {stroke:25, lat1: 38.458821, lng1: 27.227570, lat2: 38.452653, lng2: 27.228183, sub:[{renk: 'black', no:-1}]}
+      
+      // ];
+      //38.479330, 27.064982
+      //38.486729, 27.112288
+      //38.490143, 27.096853
+      //38.486025, 27.125958
+      //38.487009, 27.110939
+      locations = [
+      {stroke:5, lat1: 38.441049, lng1: 27.169812, lat2: 38.424159, lng2: 27.137666, sub:[{renk: 'green', no:-1}]},
+      {stroke:5, lat1: 38.441049, lng1: 27.169812, lat2: 38.424159, lng2: 27.137666, sub:[{renk: 'blue', no:-1}]},
+      
+      
+      ];
+
+      console.log(locations);
+      
+      
+
+      var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 7,
+        center: {lat: 38.470975, lng: 27.085328},
+        styles: [
+		  {
+		    "featureType": "poi.business",
+		    "elementType": "all",
+		    "stylers": [
+		      {
+		        "visibility": "off"
+		      }
+		    ]
+		  }
+		]
+      });
+
+      var directionsService = new google.maps.DirectionsService();
+      var bounds = new google.maps.LatLngBounds();
+      var infowindow = new google.maps.InfoWindow();
+      
+      for (i = 0; i < locations.length; i++) {
+        function inner(index){ 
+          console.log(index);
+          var request={
+            origin: new google.maps.LatLng(locations[i].lat1, locations[i].lng1),
+            destination: new google.maps.LatLng(locations[i].lat2, locations[i].lng2),
+	         //    waypoints: [
+						    // {
+						    //   location: new google.maps.LatLng(38.433370, 27.144324),
+						    //   stopover: false
+						    // }],
+            travelMode: 'DRIVING'
+          }
+          if (index===1){
+          	request.waypoints=[
+						    {
+						      location: new google.maps.LatLng(38.433370, 27.144324),
+						      stopover: false
+						    }]
+          }
+          directionsService.route(request,
+          
+          function(response, status) {
+            if (status === 'OK') {
+
+              var sub=locations[index].sub;
+
+              
+
+              if (sub[0].no===-1){
+
+                var polyline = new google.maps.Polyline({
+                  path: [],
+                  strokeColor: sub[0].renk,
+                  strokeWeight: locations[index].stroke
+                });
+                toPolyline(response, bounds, polyline);
+                console.log("full:"+sub[0].renk+' '+polyline.getPath().length);
+                polyline.setMap(map);
+                map.fitBounds(bounds);
+                google.maps.event.addListener(polyline, 'click', function(evt) {
+                  infowindow.setContent("you clicked on the route "+ evt.latLng);
+                  infowindow.setPosition(evt.latLng);
+                  infowindow.open(map);
+                })
+
+              }else{
+
+
+                var polyline = new google.maps.Polyline({
+                  path: [],
+                  strokeColor: sub[0].renk,
+                  strokeWeight: locations[index].stroke
+                });
+                toPolyline(response, bounds, polyline);
+                console.log("full:"+polyline.getPath().length);
+                var bas=0;
+
+                for (i=0; i < sub.length-1; i++ ){
+                  var tpolyline = new google.maps.Polyline({
+                    path: [],
+                    strokeColor: sub[i].renk,
+                    strokeWeight: locations[index].stroke
+                  });
+
+                  polySlice(tpolyline, polyline, bas, sub[i].no);
+                  console.log(i+" "+sub[i].renk+" "+tpolyline.getPath().length);
+                  console.log(polyline.getPath());
+                  console.log(tpolyline.getPath());
+
+                  tpolyline.setMap(map);
+                  map.fitBounds(bounds);
+                  google.maps.event.addListener(tpolyline, 'click', function(evt) {
+                    infowindow.setContent("you clicked on the route "+ evt.latLng);
+                    infowindow.setPosition(evt.latLng);
+                    infowindow.open(map);
+                  })
+
+                  bas=sub[i].no-1;
+
+                }
+
+                var tpolyline = new google.maps.Polyline({
+                  path: [],
+                  strokeColor: sub[i].renk,
+                  strokeWeight: locations[index].stroke
+                });
+
+                polySlice(tpolyline, polyline, bas, polyline.getPath().length);
+                console.log(i+" "+sub[i].renk+" "+tpolyline.getPath().length);
+                tpolyline.setMap(map);
+                map.fitBounds(bounds);
+                google.maps.event.addListener(tpolyline, 'click', function(evt) {
+                  infowindow.setContent("you clicked on the route "+ evt.latLng);
+                  infowindow.setPosition(evt.latLng);
+                  infowindow.open(map);
+                })
+              }
+
+            } else {
+              window.alert('Directions request failed due to ' + status);
+            }
+          }); //function response status
+            } //inner
+            inner(i);
+
+          }//for locations
+
+
+
+        }//function initMap
+
+        function toPolyline(response, bounds, polyline, i){
+          var k=0;
+          var legs = response.routes[0].legs;
+          for (i = 0; i < legs.length; i++) {
+            var steps = legs[i].steps;
+            //console.log("steps: "+steps);
+            for (j = 0; j < steps.length; j++) {
+              var nextSegment = steps[j].path;
+              console.log("segment: "+nextSegment);
+              for (k = 0; k < nextSegment.length; k++) {
+                polyline.getPath().push(nextSegment[k]);
+                bounds.extend(nextSegment[k]);
+                console.log("nokta: "+nextSegment[k]);
+                //console.log(polyline.getPath());
+                
+              }
+            }
+          }
+        }
+
+        function polySlice(poly1, poly2, bas, son){
+
+          for (var i=bas; i<son; i++){
+
+            poly1.getPath().push(poly2.getPath().getArray()[i]);
+            //console.log("polySlice: ");
+            //console.log(poly2.getPath()[i]);
+
+          }
+
+        }
+
+
+      </script>
+      <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAcDdJ0SqCIX7m481JLFu3VFcMc09vgpO0&callback=initMap">
+    </script>
+  </body>
+  </html>
+
